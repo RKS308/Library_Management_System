@@ -1,0 +1,178 @@
+print("""
+                    !=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=!
+                    !=================================!
+                    !      WELCOME TO THE LIBRARY     !
+                    !=================================!
+                    !=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=!""")
+#imported modules
+from datetime import date,timedelta
+import mysql.connector as myc
+import sys
+mydb=myc.connect(host="localhost",user="root",passwd="1234",database="library")
+mycursor=mydb.cursor()
+mycursor.execute("create database if not exists library")
+mycursor.execute("use library")
+mycursor.execute("create table if not exists fiction_series\
+                 (Book_id int primary key,\
+                 Book_name varchar(50),\
+                 Author varchar(30),\
+                 Books int)")
+mycursor.execute("create table if not exists autobiography\
+                (Book_id int primary key,\
+                 Book_name varchar(50),\
+                 Author varchar(30))")
+mycursor.execute("create table if not exists books_issued\
+                (Book_id int, \
+                 Issue_date date ,\
+                 Return_date date,\
+                 Issued_to varchar(30))")
+#inserting values in table fiction series
+try:    
+    st="insert into fiction_series values(%s,%s,%s,%s)"
+    val=[(1101,"Harry Potter","J K Rowling",7),
+         (1102,"The Hunger Games","Suzanne Collins",3),
+         (1103,"Divergent","Veronica Roth",3),
+         (1104,"Percy Jackson","Rick Riordan",5),
+         (1105,"The naughtiest girl","Enid Blyton",10)]
+    mycursor.executemany(st,val)
+except myc.IntegrityError:
+    pass
+#inserting values in table autobiograhy 
+try :
+    at="insert into autobiography values(%s,%s,%s)"
+    vl=[(1201,"Wings of fire","Abdul Kalam"),
+        (1202,"My experiments with truth","M k Gandhi"),
+        (1203,"Long walk to freedom ","Nelson Mandela"),
+        (1204,"Dreams from my father","Barack Obama "),
+        (1205,"I am Malala","Malala Yousafzai"),
+        (1206,"Becoming","Michelle Obama"),
+        (1207,"Meri kahani","Kamala das"),
+        (1208,"Diary of a young girl","Anne frank")]
+    mycursor.executemany(at,vl)
+except myc.IntegrityError:
+    pass 
+mydb.commit()
+
+#diplay books
+def diplay():
+    mycursor.execute("select * from fiction_series")
+    print("FICTION SERIES:")
+    for i in mycursor:
+        print(i)
+    mycursor.execute("select * from autobiography")
+    print("AUTOBIOGRAPHIES")
+    for i in mycursor:
+        print(i)
+#borrow book 
+def issue():
+    n=input("Enter name of the patron")
+    a=int(input("enter book id "))
+    i=date.today()
+    b=int(input("No. of days to be issued for: "))
+    r=i+timedelta(days=b)
+    mycursor.execute("insert into books_issued values('{}','{}','{}','{}')".format(a,i,r,n))
+    mydb.commit()
+    print("Issued successfully!!")
+#add a series
+def addseries():
+    try:        
+        a=int(input("enter book id"))
+        b=input("enter book name")
+        c=input("Enter author's name")
+        d=int(input("Enter no. of books "))
+        mycursor.execute("insert into fiction_series values('{}','{}','{}','{}')".format(a,b,c,d))
+        mydb.commit()
+        print("Added successfully")
+    except myc.IntegrityError:
+        print("please check the book id. It should be unique")
+        pass
+#add an autobiography
+def addauto():
+    try:
+        a=int(input("enter book id"))
+        b=input("enter book name")
+        c=input("Enter author's name")
+        d="insert into autobiography values('{}','{}','{}')".format(a,b,c)
+        mycursor.execute(d)
+        mydb.commit()
+        print("Added successfully")
+    except myc.IntegrityError:
+        print("please check the book id. It should be unique")
+        pass     
+
+#Return a book
+def bookreturn():
+    try:
+        a=int(input("Enter book id"))
+        b=input("Enter name of the patron")
+        c="delete from books_issued where Book_id={} and Issued_to ={}".format(a,b)
+        mycursor.execute(c)
+        mydb.commit()
+        print("Book returned")
+    except:
+        print("sorry !! no such book issued")
+        sys.exit()        
+        
+#show books_issued table
+def booksissued():
+    print("If no table is printed ⇒ no books issued ⇒ table is empty")
+    mycursor.execute("select*from books_issued")
+    for i in mycursor:
+        print(i)   
+
+pas=input("Enter password:") 
+ans="y"
+while ans=="y":
+#admin access    
+    if pas==("libad2808"):
+        print("1:display books")
+        print("2:issue a book ")
+        print("3:add a series ")
+        print("4:add an autobiography")
+        print("5:return a book/series")
+        print("6:display issued books table")
+        print("7:exit")
+        try:
+            c=int(input("Enter your choice:"))    
+        except ValueError:
+            sys.exit("\n sorry! That isn't any number")
+        else:
+            print("\n")
+        if c==1:
+            diplay()
+        elif c==2:
+            issue()
+        elif c==3:
+            addseries()
+        elif c==4:
+            addauto()
+        elif c==5:
+            bookreturn()
+        elif c==6:
+            booksissued()
+        else:
+            sys.exit()
+        ans=input("want to continue? (y:yes/n:no):")
+# user access
+    elif pas==("libuser01"):
+        print("1:display books")
+        print("2:issue a book ")
+        print("3:return a book/series")
+        print("4:exit")
+        try:
+            c=int(input("Enter your choice:"))    
+        except ValueError:
+            sys.exit("\n sorry! That isn't any number")
+        else:
+            print("\n")
+        if c==1:
+            diplay()
+        elif c==2:
+            issue()
+        elif c==3:
+            bookreturn()
+        else:
+            sys.exit()  
+        ans=input("want to continue? (y:yes/n:no)")    
+else:
+    print("ACCESS DENIED!! You have entered a wrong password")
